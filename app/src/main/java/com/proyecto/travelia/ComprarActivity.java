@@ -24,9 +24,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.proyecto.travelia.data.FavoritesRepository;
 import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.navigation.BottomNavComponent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +64,7 @@ public class ComprarActivity extends AppCompatActivity {
 
         initViews();
         setupSpinners();
+        reservationsRepository = new ReservationsRepository(this);
         setupBottomNav();
         initReservationsObserver();
         setupListeners();
@@ -99,15 +102,16 @@ public class ComprarActivity extends AppCompatActivity {
     private void setupBottomNav() {
         BottomNavView bottom = findViewById(R.id.bottom_nav);
         if (bottom != null) {
+            FavoritesRepository favoritesRepository = new FavoritesRepository(this);
+            BottomNavComponent.bind(this, bottom, BottomNavView.Tab.RESERVE,
+                    favoritesRepository, reservationsRepository);
             bottom.setOnAddClickListener(v ->
                     Toast.makeText(this, "Acción agregar (Compra)", Toast.LENGTH_SHORT).show()
             );
-            bottom.highlight(BottomNavView.Tab.RESERVE);
         }
     }
 
     private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
         reservationsRepository.observeAll().observe(this, this::renderResumenReservas);
     }
 

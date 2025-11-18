@@ -13,8 +13,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.proyecto.travelia.R;
 import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.FavoriteEntity;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.navigation.BottomNavComponent;
 
 import java.util.List;
 
@@ -53,6 +55,9 @@ public class FavoritosActivity extends AppCompatActivity {
         // BottomNav: acción especial para Agregar (opcional)
         BottomNavView bottom = findViewById(R.id.bottom_nav);
         if (bottom != null) {
+            ReservationsRepository reservationsRepository = new ReservationsRepository(this);
+            BottomNavComponent.bind(this, bottom, BottomNavView.Tab.FAVORITES,
+                    repo, reservationsRepository);
             bottom.setOnAddClickListener(v -> {
                 // TODO: abre tu Activity de creación/publicación si aplica
                 // startActivity(new Intent(this, CrearPublicacionActivity.class));

@@ -16,9 +16,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.proyecto.travelia.data.FavoritesRepository;
 import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.navigation.BottomNavComponent;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -34,6 +36,7 @@ public class DetalleArticuloActivity extends AppCompatActivity {
     private Button btnEscribirOpinion, btnVerMasResenas;
 
     private ReservationsRepository reservationsRepository;
+    private FavoritesRepository favoritesRepository;
     private String tourId;
     private int imageRes;
     private double priceValue;
@@ -53,6 +56,8 @@ public class DetalleArticuloActivity extends AppCompatActivity {
         });
 
         initViews();
+        favoritesRepository = new FavoritesRepository(this);
+        reservationsRepository = new ReservationsRepository(this);
         setupBottomNavNew();
         loadArticleData();
         setupSpinners();
@@ -83,8 +88,6 @@ public class DetalleArticuloActivity extends AppCompatActivity {
     }
 
     private void loadArticleData() {
-        reservationsRepository = new ReservationsRepository(this);
-
         Intent intent = getIntent();
         tourId = intent.getStringExtra("id");
         String titulo = intent.getStringExtra("titulo");
@@ -188,7 +191,8 @@ public class DetalleArticuloActivity extends AppCompatActivity {
 
     private void setupBottomNavNew() {
         BottomNavView bottom = findViewById(R.id.bottom_nav);
-        // Sin lógica extra de insets aquí
+        BottomNavComponent.bind(this, bottom, BottomNavView.Tab.EXPLORAR,
+                favoritesRepository, reservationsRepository);
     }
 
     private double parsePrice(String price) {

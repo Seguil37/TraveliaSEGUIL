@@ -21,8 +21,10 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.FavoriteEntity;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.navigation.BottomNavComponent;
 
 import java.util.concurrent.Executors;
 
@@ -44,10 +46,13 @@ public class ExplorarActivity extends AppCompatActivity {
         });
 
         favRepo = new FavoritesRepository(this);
+        ReservationsRepository reservationsRepository = new ReservationsRepository(this);
 
         // BottomNav: acción especial para ADD (si quieres)
         BottomNavView bottom = findViewById(R.id.bottom_nav);
         if (bottom != null) {
+            BottomNavComponent.bind(this, bottom, BottomNavView.Tab.EXPLORAR,
+                    favRepo, reservationsRepository);
             bottom.setOnAddClickListener(v ->
                     Toast.makeText(this, "Acción agregar (Explorar)", Toast.LENGTH_SHORT).show()
             );

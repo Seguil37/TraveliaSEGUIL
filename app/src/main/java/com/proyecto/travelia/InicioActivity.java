@@ -1,6 +1,5 @@
 package com.proyecto.travelia;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,7 +21,10 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.navigation.BottomNavComponent;
 
 public class InicioActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -72,6 +74,11 @@ public class InicioActivity extends AppCompatActivity implements OnMapReadyCallb
         // ✅ BottomNavView: acción especial para ADD (opcional)
         BottomNavView bottom = findViewById(R.id.bottom_nav);
         if (bottom != null) {
+            FavoritesRepository favoritesRepository = new FavoritesRepository(this);
+            ReservationsRepository reservationsRepository = new ReservationsRepository(this);
+            BottomNavComponent.bind(this, bottom, BottomNavView.Tab.HOME,
+                    favoritesRepository, reservationsRepository);
+
             bottom.setOnAddClickListener(v -> {
                 // TODO: cambia a tu Activity real para crear/publicar
                 // startActivity(new Intent(this, CrearPublicacionActivity.class));
