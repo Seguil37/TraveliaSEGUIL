@@ -75,6 +75,16 @@
                 android:textColor="#E91E63" />
 
             <TextView
+                android:id="@+id/tv_session_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Inicia sesión para ver tus reservas"
+                android:textColor="@android:color/holo_red_dark"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+
+            <TextView
                 android:id="@+id/tv_empty_reservas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

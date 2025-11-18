@@ -11,15 +11,15 @@ import java.util.List;
 @Dao
 public interface ReservationDao {
 
-    @Query("SELECT * FROM reservations ORDER BY createdAt DESC")
-    LiveData<List<ReservationEntity>> observeAll();
+    @Query("SELECT * FROM reservations WHERE userId = :userId ORDER BY createdAt DESC")
+    LiveData<List<ReservationEntity>> observeByUser(String userId);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void upsert(ReservationEntity entity);
 
-    @Query("DELETE FROM reservations WHERE id = :reservationId")
-    void deleteById(String reservationId);
+    @Query("DELETE FROM reservations WHERE id = :reservationId AND userId = :userId")
+    void deleteById(String reservationId, String userId);
 
-    @Query("DELETE FROM reservations")
-    void clearAll();
+    @Query("DELETE FROM reservations WHERE userId = :userId")
+    void clearAll(String userId);
 }

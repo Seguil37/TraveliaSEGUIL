@@ -1,8 +1,6 @@
 package com.proyecto.travelia;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -11,70 +9,69 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.proyecto.travelia.data.SessionManager;
+import com.proyecto.travelia.data.UserRepository;
 
 public class LoginActivity extends AppCompatActivity {
 
     private EditText etUsuario;
     private EditText etContrasena;
     private TextView tvOlvido;
+    private TextView tvRegistrar;
     private Button btnIngresar;
     private ImageButton btnGoogle;
     private ImageButton btnFacebook;
     private ImageButton btnOtra;
 
-    private static final String PREFS_NOMBRE = "preferencias_usuario";
-    private static final String KEY_USUARIO = "usuario_guardado";
+    private UserRepository userRepository;
+    private SessionManager sessionManager;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
+
+        userRepository = new UserRepository(this);
+        sessionManager = userRepository.getSessionManager();
 
         inicializarVistas();
         configurarEventos();
-        cargarUsuarioGuardado();
     }
 
-    private void cargarUsuarioGuardado() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NOMBRE, Context.MODE_PRIVATE);
-        String usuarioGuardado = prefs.getString(KEY_USUARIO, "");
-        if (!usuarioGuardado.isEmpty()) {
-            etUsuario.setText(usuarioGuardado);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (sessionManager.getActiveUserIdNow() != null) {
+            irAInicio();
         }
     }
-    private void intentarLogin(){
+
+    private void intentarLogin() {
         String usuario = etUsuario.getText().toString().trim();
         String contrasena = etContrasena.getText().toString();
 
-        // Validaciones
-        if (!validaruduario(usuario) || !validarContrasena(contrasena)) {
+        if (!validarUsuario(usuario) || !validarContrasena(contrasena)) {
             return;
         }
 
-        // Aquí va tu lógica real de autenticación (API / Firebase / etc.)
-        // POR AHORA: validación local de ejemplo
-        if (usuario.equals("admin@gmail.com") && contrasena.equals("1234")) {
-            guardarUsuario(usuario);
-            Toast.makeText(this, "Inicio de sesión correcto", Toast.LENGTH_SHORT).show();
-
-            // Navegar a la pantalla principal (cambiar MainActivity.class por la tuya)
-            Intent intent = new Intent(LoginActivity.this, InicioActivity.class);
-            startActivity(intent);
-            finish();
-        } else {
-            Toast.makeText(this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show();
-        }
-
+        setLoading(true);
+        userRepository.login(usuario, contrasena, (success, user, message) -> {
+            setLoading(false);
+            Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+            if (success) {
+                irAInicio();
+            }
+        });
     }
-    private boolean validaruduario(String usuario){
+
+    private boolean validarUsuario(String usuario) {
         if (TextUtils.isEmpty(usuario)) {
             etUsuario.setError("Ingrese correo electrónico");
             etUsuario.requestFocus();
@@ -89,7 +86,7 @@ public class LoginActivity extends AppCompatActivity {
         return true;
     }
 
-    private boolean validarContrasena(String contrasena){
+    private boolean validarContrasena(String contrasena) {
         if (TextUtils.isEmpty(contrasena)) {
             etContrasena.setError("Ingrese contraseña");
             etContrasena.requestFocus();
@@ -104,56 +101,44 @@ public class LoginActivity extends AppCompatActivity {
         return true;
     }
 
-    private void guardarUsuario(String usuario){
-        SharedPreferences prefs = getSharedPreferences(PREFS_NOMBRE, Context.MODE_PRIVATE);
-        prefs.edit().putString(KEY_USUARIO, usuario).apply();
-    }
-
     private void configurarEventos() {
-        btnIngresar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                intentarLogin();
-            }
+        btnIngresar.setOnClickListener(v -> intentarLogin());
+
+        tvRegistrar.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
         });
 
-        tvOlvido.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Funcionalidad 'Olvidé mi contraseña' pendiente", Toast.LENGTH_SHORT).show();
-            }
-        });
+        tvOlvido.setOnClickListener(v ->
+                Toast.makeText(LoginActivity.this, "Funcionalidad 'Olvidé mi contraseña' pendiente", Toast.LENGTH_SHORT).show());
 
-        btnGoogle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Iniciar sesión con Google (pendiente)", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btnFacebook.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Iniciar sesión con Facebook (pendiente)", Toast.LENGTH_SHORT).show();
-            }
-        });
-        btnOtra.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Otra opción (pendiente)", Toast.LENGTH_SHORT).show();
-            }
-        });
+        View.OnClickListener socialListener = v ->
+                Toast.makeText(LoginActivity.this, "Integración pendiente", Toast.LENGTH_SHORT).show();
+        btnGoogle.setOnClickListener(socialListener);
+        btnFacebook.setOnClickListener(socialListener);
+        btnOtra.setOnClickListener(socialListener);
     }
 
     private void inicializarVistas() {
         etUsuario = findViewById(R.id.et_usuario);
         etContrasena = findViewById(R.id.et_contrasena);
         tvOlvido = findViewById(R.id.tv_olvido);
+        tvRegistrar = findViewById(R.id.tv_registrar);
         btnIngresar = findViewById(R.id.btn_ingresar);
         btnGoogle = findViewById(R.id.btn_google);
         btnFacebook = findViewById(R.id.button3);
         btnOtra = findViewById(R.id.button4);
     }
 
+    private void setLoading(boolean loading) {
+        btnIngresar.setEnabled(!loading);
+        btnIngresar.setAlpha(loading ? 0.5f : 1f);
+    }
 
+    private void irAInicio() {
+        Intent intent = new Intent(LoginActivity.this, InicioActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+    }
 }

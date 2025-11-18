@@ -68,7 +68,7 @@ public class FavoritosAdapter extends RecyclerView.Adapter<FavoritosAdapter.VH> 
         // Quitar de favoritos con opción de deshacer
         h.ivFav.setOnClickListener(v -> {
             h.ivFav.setSelected(false);
-            Executors.newSingleThreadExecutor().execute(() -> repo.remove(f.itemId));
+            Executors.newSingleThreadExecutor().execute(() -> repo.remove(f.userId, f.itemId));
 
             Snackbar.make(h.itemView, "Quitado de favoritos", Snackbar.LENGTH_LONG)
                     .setAction("Deshacer", a -> {

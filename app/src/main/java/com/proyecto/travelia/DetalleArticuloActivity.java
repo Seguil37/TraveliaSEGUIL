@@ -17,6 +17,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.proyecto.travelia.data.ReservationsRepository;
+import com.proyecto.travelia.data.SessionManager;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
@@ -34,6 +35,8 @@ public class DetalleArticuloActivity extends AppCompatActivity {
     private Button btnEscribirOpinion, btnVerMasResenas;
 
     private ReservationsRepository reservationsRepository;
+    private SessionManager sessionManager;
+    private String activeUserKey;
     private String tourId;
     private int imageRes;
     private double priceValue;
@@ -51,6 +54,13 @@ public class DetalleArticuloActivity extends AppCompatActivity {
             v.setPadding(sb.left, sb.top, sb.right, 0);
             return insets;
         });
+
+        sessionManager = SessionManager.getInstance(this);
+        activeUserKey = sessionManager.getActiveUserKey();
+        sessionManager.getActiveUserId().observe(this, userId ->
+                activeUserKey = userId == null ? null : String.valueOf(userId));
+
+        reservationsRepository = new ReservationsRepository(this);
 
         initViews();
         setupBottomNavNew();
@@ -83,8 +93,6 @@ public class DetalleArticuloActivity extends AppCompatActivity {
     }
 
     private void loadArticleData() {
-        reservationsRepository = new ReservationsRepository(this);
-
         Intent intent = getIntent();
         tourId = intent.getStringExtra("id");
         String titulo = intent.getStringExtra("titulo");
@@ -139,10 +147,17 @@ public class DetalleArticuloActivity extends AppCompatActivity {
                 String titulo = tvTituloDetalle.getText().toString();
                 String ubicacion = tvUbicacionDetalle.getText().toString();
                 String participantes = spAdultos.getSelectedItem().toString();
-                String reservationId = ReservationsRepository.buildId(tourId != null ? tourId : titulo, fecha);
+                if (activeUserKey == null) {
+                    Toast.makeText(this, "Inicia sesión para reservar", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(this, LoginActivity.class));
+                    return;
+                }
+
+                String reservationId = ReservationsRepository.buildId(activeUserKey, tourId != null ? tourId : titulo, fecha);
 
                 ReservationEntity entity = new ReservationEntity(
                         reservationId,
+                        activeUserKey,
                         tourId,
                         titulo,
                         ubicacion,

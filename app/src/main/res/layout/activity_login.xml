@@ -193,6 +193,16 @@
                     android:src="@drawable/r"
                     android:contentDescription="Iniciar sesión con otra opción" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_registrar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="¿No tienes cuenta? Regístrate aquí"
+                android:textColor="#673AB7"
+                android:textStyle="bold"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

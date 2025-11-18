@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.SessionManager;
 import com.proyecto.travelia.data.local.FavoriteEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
@@ -29,6 +30,8 @@ import java.util.concurrent.Executors;
 public class ExplorarActivity extends AppCompatActivity {
 
     private FavoritesRepository favRepo;
+    private SessionManager sessionManager;
+    private String activeUserKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +47,10 @@ public class ExplorarActivity extends AppCompatActivity {
         });
 
         favRepo = new FavoritesRepository(this);
+        sessionManager = SessionManager.getInstance(this);
+        activeUserKey = sessionManager.getActiveUserKey();
+        sessionManager.getActiveUserId().observe(this, userId ->
+                activeUserKey = userId == null ? null : String.valueOf(userId));
 
         // BottomNav: acción especial para ADD (si quieres)
         BottomNavView bottom = findViewById(R.id.bottom_nav);
@@ -108,18 +115,28 @@ public class ExplorarActivity extends AppCompatActivity {
             if (tvRat != null) tvRat.setText(d.ratingTxt);
 
             Executors.newSingleThreadExecutor().execute(() -> {
-                boolean isFav = favRepo.isFavoriteSync(d.id);
+                boolean isFav = favRepo.isFavoriteSync(activeUserKey, d.id);
                 runOnUiThread(() -> ivFav.setSelected(isFav));
             });
 
             ivFav.setOnClickListener(v -> {
+                if (activeUserKey == null) {
+                    ivFav.setSelected(false);
+                    Snackbar.make(card, "Inicia sesión para guardar favoritos", Snackbar.LENGTH_LONG)
+                            .setAction("Iniciar sesión", a ->
+                                    startActivity(new Intent(ExplorarActivity.this, LoginActivity.class)))
+                            .show();
+                    return;
+                }
+
                 boolean nowSelected = !ivFav.isSelected();
                 ivFav.setSelected(nowSelected);
 
                 if (nowSelected) {
+                    double priceValue = parsePrice(d.precio);
                     FavoriteEntity e = new FavoriteEntity(
-                            "guest", d.id, "TOUR", d.titulo, d.ubicacion,
-                            "img_local", Double.valueOf(d.precio.replace("S/", "")), 4.5,
+                            activeUserKey, d.id, "TOUR", d.titulo, d.ubicacion,
+                            "img_local", priceValue, 4.5,
                             System.currentTimeMillis()
                     );
                     Executors.newSingleThreadExecutor().execute(() -> favRepo.add(e));
@@ -127,10 +144,10 @@ public class ExplorarActivity extends AppCompatActivity {
                     Snackbar.make(card, "¡Añadido a favoritos!", Snackbar.LENGTH_LONG)
                             .setAction("Deshacer", a -> {
                                 ivFav.setSelected(false);
-                                Executors.newSingleThreadExecutor().execute(() -> favRepo.remove(d.id));
+                                Executors.newSingleThreadExecutor().execute(() -> favRepo.remove(activeUserKey, d.id));
                             }).show();
                 } else {
-                    Executors.newSingleThreadExecutor().execute(() -> favRepo.remove(d.id));
+                    Executors.newSingleThreadExecutor().execute(() -> favRepo.remove(activeUserKey, d.id));
                     Snackbar.make(card, "Eliminado de favoritos", Snackbar.LENGTH_SHORT).show();
                 }
             });
@@ -160,6 +177,18 @@ public class ExplorarActivity extends AppCompatActivity {
             this.id = id; this.titulo = t; this.ubicacion = u;
             this.precio = p; this.estrellas = e; this.ratingTxt = r;
             this.imageRes = img;
+        }
+    }
+
+    private double parsePrice(String price) {
+        if (price == null) return 0d;
+        String cleaned = price.replace("S/", "").replace("s/", "");
+        cleaned = cleaned.replaceAll("[^0-9.,]", "").replace(",", "");
+        if (cleaned.isEmpty()) return 0d;
+        try {
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            return 0d;
         }
     }
 }

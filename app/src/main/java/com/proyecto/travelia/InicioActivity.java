@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.LiveData;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -22,11 +23,20 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.proyecto.travelia.data.SessionManager;
+import com.proyecto.travelia.data.UserRepository;
+import com.proyecto.travelia.data.local.UserEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
 public class InicioActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMaps;
+    private TextView tvSaludo;
+    private TextView tvPregunta;
+    private ImageView ivProfile;
+    private UserRepository userRepository;
+    private SessionManager sessionManager;
+    private LiveData<UserEntity> userLiveData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +54,25 @@ public class InicioActivity extends AppCompatActivity implements OnMapReadyCallb
         // ✅ MAPA
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapa);
         if (mapFragment != null) mapFragment.getMapAsync(this);
+
+        tvSaludo = findViewById(R.id.tv_saludo);
+        tvPregunta = findViewById(R.id.tv_pregunta);
+        ivProfile = findViewById(R.id.iv_profile);
+
+        userRepository = new UserRepository(this);
+        sessionManager = userRepository.getSessionManager();
+        userLiveData = userRepository.observeActiveUser();
+        userLiveData.observe(this, user -> {
+            if (user == null) {
+                tvSaludo.setText("HOLA VIAJERO");
+                tvPregunta.setText("Inicia sesión para ver recomendaciones");
+            } else {
+                tvSaludo.setText("Hola, " + user.name);
+                tvPregunta.setText("¿Listo para tu próxima aventura?");
+            }
+        });
+
+        ivProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileActivity.class)));
 
         // ✅ RECOMENDACIONES DINÁMICAS (igual que ya tenías)
         LinearLayout container = findViewById(R.id.container_recomendaciones);

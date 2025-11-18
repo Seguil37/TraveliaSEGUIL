@@ -23,8 +23,11 @@ import androidx.cardview.widget.CardView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.LiveData;
 
+import com.proyecto.travelia.LoginActivity;
 import com.proyecto.travelia.data.ReservationsRepository;
+import com.proyecto.travelia.data.SessionManager;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
@@ -42,11 +45,15 @@ public class ComprarActivity extends AppCompatActivity {
     private TextView tvEmptyResumen;
     private View viewResumenDivider;
     private TextView tvTotal;
+    private TextView tvSessionState;
 
     private String metodoSeleccionado = "";
     private ReservationsRepository reservationsRepository;
+    private SessionManager sessionManager;
+    private LiveData<List<ReservationEntity>> reservationsLiveData;
     private List<ReservationEntity> currentReservations = new ArrayList<>();
     private double totalActual = 0d;
+    private String activeUserKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +66,10 @@ public class ComprarActivity extends AppCompatActivity {
             v.setPadding(sb.left, sb.top, sb.right, 0);
             return insets;
         });
+
+        reservationsRepository = new ReservationsRepository(this);
+        sessionManager = SessionManager.getInstance(this);
+        activeUserKey = sessionManager.getActiveUserKey();
 
         initViews();
         setupSpinners();
@@ -85,6 +96,7 @@ public class ComprarActivity extends AppCompatActivity {
         tvEmptyResumen = findViewById(R.id.tv_empty_resumen);
         viewResumenDivider = findViewById(R.id.view_resumen_divider);
         tvTotal = findViewById(R.id.tv_total);
+        tvSessionState = findViewById(R.id.tv_session_state);
     }
 
     private void setupSpinners() {
@@ -107,8 +119,27 @@ public class ComprarActivity extends AppCompatActivity {
     }
 
     private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
-        reservationsRepository.observeAll().observe(this, this::renderResumenReservas);
+        sessionManager.getActiveUserId().observe(this, userId -> {
+            if (reservationsLiveData != null) {
+                reservationsLiveData.removeObservers(this);
+                reservationsLiveData = null;
+            }
+
+            if (userId == null) {
+                activeUserKey = null;
+                tvSessionState.setVisibility(View.VISIBLE);
+                tvSessionState.setOnClickListener(v ->
+                        startActivity(new Intent(ComprarActivity.this, LoginActivity.class)));
+                setFormEnabled(false);
+                renderResumenReservas(new ArrayList<>());
+            } else {
+                activeUserKey = String.valueOf(userId);
+                tvSessionState.setVisibility(View.GONE);
+                setFormEnabled(true);
+                reservationsLiveData = reservationsRepository.observeByUser(activeUserKey);
+                reservationsLiveData.observe(this, this::renderResumenReservas);
+            }
+        });
     }
 
     private void renderResumenReservas(List<ReservationEntity> reservas) {
@@ -117,6 +148,9 @@ public class ComprarActivity extends AppCompatActivity {
         if (reservas == null || reservas.isEmpty()) {
             currentReservations = new ArrayList<>();
             tvEmptyResumen.setVisibility(View.VISIBLE);
+            tvEmptyResumen.setText(activeUserKey == null ?
+                    "Inicia sesión para revisar tu carrito" :
+                    "Aún no agregas tours a tu reserva.");
             viewResumenDivider.setVisibility(View.GONE);
             totalActual = 0d;
             tvTotal.setText(String.format(Locale.getDefault(), "S/%.2f", totalActual));
@@ -189,6 +223,11 @@ public class ComprarActivity extends AppCompatActivity {
         });
 
         btnPagar.setOnClickListener(v -> {
+            if (activeUserKey == null) {
+                Toast.makeText(this, "Inicia sesión para completar la compra", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, LoginActivity.class));
+                return;
+            }
             if (currentReservations.isEmpty()) {
                 Toast.makeText(this, "Tu carrito de reservas está vacío", Toast.LENGTH_SHORT).show();
                 return;
@@ -296,5 +335,18 @@ public class ComprarActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         }, 1500);
+    }
+
+    private void setFormEnabled(boolean enabled) {
+        etNombres.setEnabled(enabled);
+        etEmail.setEnabled(enabled);
+        etTelefono.setEnabled(enabled);
+        spNacionalidad.setEnabled(enabled);
+        btnPagar.setEnabled(enabled);
+        cardDebito.setEnabled(enabled);
+        cardPaypal.setEnabled(enabled);
+        cardTransferencia.setEnabled(enabled);
+        cardYape.setEnabled(enabled);
+        btnCancelar.setEnabled(enabled);
     }
 }

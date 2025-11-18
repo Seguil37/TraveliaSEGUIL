@@ -16,8 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.LiveData;
 
 import com.proyecto.travelia.data.ReservationsRepository;
+import com.proyecto.travelia.data.SessionManager;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
@@ -32,9 +34,13 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
     private Button btnContinuarCompra;
     private LinearLayout layoutReservas;
     private TextView tvEmpty;
+    private TextView tvSessionState;
 
     private ReservationsRepository reservationsRepository;
+    private SessionManager sessionManager;
+    private LiveData<List<ReservationEntity>> reservationsLiveData;
     private List<ReservationEntity> currentReservations = new ArrayList<>();
+    private String activeUserKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,9 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
             return insets;
         });
 
+        reservationsRepository = new ReservationsRepository(this);
+        sessionManager = SessionManager.getInstance(this);
+
         initViews();
         setupBottomNav();
         initReservationsObserver();
@@ -60,11 +69,17 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
         btnContinuarCompra = findViewById(R.id.btn_continuar_compra);
         layoutReservas = findViewById(R.id.layout_reservas);
         tvEmpty = findViewById(R.id.tv_empty_reservas);
+        tvSessionState = findViewById(R.id.tv_session_state);
         updateContinueButtonState(false);
     }
 
     private void setupListeners() {
         btnContinuarCompra.setOnClickListener(v -> {
+            if (activeUserKey == null) {
+                Toast.makeText(this, "Inicia sesión para continuar", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, LoginActivity.class));
+                return;
+            }
             if (currentReservations.isEmpty()) {
                 Toast.makeText(this, "Agrega un tour antes de continuar", Toast.LENGTH_SHORT).show();
                 return;
@@ -81,8 +96,25 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
     }
 
     private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
-        reservationsRepository.observeAll().observe(this, this::renderReservations);
+        sessionManager.getActiveUserId().observe(this, userId -> {
+            if (reservationsLiveData != null) {
+                reservationsLiveData.removeObservers(this);
+                reservationsLiveData = null;
+            }
+
+            if (userId == null) {
+                activeUserKey = null;
+                tvSessionState.setVisibility(View.VISIBLE);
+                tvSessionState.setOnClickListener(v ->
+                        startActivity(new Intent(ConfirmarReservaActivity.this, LoginActivity.class)));
+                renderReservations(new ArrayList<>());
+            } else {
+                activeUserKey = String.valueOf(userId);
+                tvSessionState.setVisibility(View.GONE);
+                reservationsLiveData = reservationsRepository.observeByUser(activeUserKey);
+                reservationsLiveData.observe(this, this::renderReservations);
+            }
+        });
     }
 
     private void renderReservations(List<ReservationEntity> reservations) {
@@ -91,6 +123,9 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
         if (reservations == null || reservations.isEmpty()) {
             currentReservations = Collections.emptyList();
             tvEmpty.setVisibility(View.VISIBLE);
+            tvEmpty.setText(activeUserKey == null ?
+                    "Inicia sesión para ver tus reservas" :
+                    "Aún no tienes tours reservados.");
             tvTotal.setText(String.format(Locale.getDefault(), "S/%.2f", 0f));
             updateContinueButtonState(false);
             return;
@@ -122,7 +157,7 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
                 ivImagen.setImageResource(entity.imageRes);
             }
 
-            btnEliminar.setOnClickListener(v -> reservationsRepository.remove(entity.id));
+            btnEliminar.setOnClickListener(v -> reservationsRepository.remove(entity.id, activeUserKey));
             layoutReservas.addView(view);
 
             total += entity.price;

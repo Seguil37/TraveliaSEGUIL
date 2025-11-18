@@ -68,6 +68,17 @@
             android:textSize="20sp"
             android:padding="16dp"/>
 
+        <TextView
+            android:id="@+id/tv_session_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:text="Inicia sesión para ver tus favoritos"
+            android:textColor="@android:color/holo_red_dark"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFavoritos"
             android:layout_width="match_parent"

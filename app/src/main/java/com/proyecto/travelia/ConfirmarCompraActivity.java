@@ -2,6 +2,7 @@ package com.proyecto.travelia;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -14,8 +15,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.LiveData;
 
+import com.proyecto.travelia.data.PurchaseRepository;
 import com.proyecto.travelia.data.ReservationsRepository;
+import com.proyecto.travelia.data.SessionManager;
 import com.proyecto.travelia.data.local.ReservationEntity;
 import com.proyecto.travelia.ui.BottomNavView;
 
@@ -29,10 +33,15 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
     private LinearLayout layoutReservas;
     private TextView tvEmpty;
     private TextView tvTotalPagado;
-    private android.view.View viewDivider;
+    private View viewDivider;
+    private TextView tvSessionState;
 
     private ReservationsRepository reservationsRepository;
+    private PurchaseRepository purchaseRepository;
+    private SessionManager sessionManager;
+    private LiveData<List<ReservationEntity>> reservationsLiveData;
     private List<ReservationEntity> currentReservations = new ArrayList<>();
+    private String activeUserKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +56,10 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
             return insets;
         });
 
+        reservationsRepository = new ReservationsRepository(this);
+        purchaseRepository = new PurchaseRepository(this);
+        sessionManager = SessionManager.getInstance(this);
+
         initViews();
         setupBottomNavNew();
         initReservationsObserver();
@@ -60,6 +73,7 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tv_empty_compra);
         tvTotalPagado = findViewById(R.id.tv_total_pagado);
         viewDivider = findViewById(R.id.view_compra_divider);
+        tvSessionState = findViewById(R.id.tv_session_state);
     }
 
     private void setupListeners() {
@@ -67,8 +81,27 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
     }
 
     private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
-        reservationsRepository.observeAll().observe(this, this::renderResumen);
+        sessionManager.getActiveUserId().observe(this, userId -> {
+            if (reservationsLiveData != null) {
+                reservationsLiveData.removeObservers(this);
+                reservationsLiveData = null;
+            }
+
+            if (userId == null) {
+                activeUserKey = null;
+                tvSessionState.setVisibility(View.VISIBLE);
+                tvSessionState.setOnClickListener(v ->
+                        startActivity(new Intent(ConfirmarCompraActivity.this, LoginActivity.class)));
+                btnVerViajes.setEnabled(false);
+                renderResumen(new ArrayList<>());
+            } else {
+                activeUserKey = String.valueOf(userId);
+                tvSessionState.setVisibility(View.GONE);
+                btnVerViajes.setEnabled(true);
+                reservationsLiveData = reservationsRepository.observeByUser(activeUserKey);
+                reservationsLiveData.observe(this, this::renderResumen);
+            }
+        });
     }
 
     private void renderResumen(List<ReservationEntity> reservas) {
@@ -76,15 +109,18 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
 
         if (reservas == null || reservas.isEmpty()) {
             currentReservations = new ArrayList<>();
-            tvEmpty.setVisibility(android.view.View.VISIBLE);
-            viewDivider.setVisibility(android.view.View.GONE);
+            tvEmpty.setVisibility(View.VISIBLE);
+            tvEmpty.setText(activeUserKey == null ?
+                    "Inicia sesión para revisar tus compras" :
+                    "No encontramos reservas para mostrar.");
+            viewDivider.setVisibility(View.GONE);
             tvTotalPagado.setText(String.format(Locale.getDefault(), "S/%.2f", 0f));
             return;
         }
 
         currentReservations = new ArrayList<>(reservas);
-        tvEmpty.setVisibility(android.view.View.GONE);
-        viewDivider.setVisibility(android.view.View.VISIBLE);
+        tvEmpty.setVisibility(View.GONE);
+        viewDivider.setVisibility(View.VISIBLE);
 
         double total = 0d;
 
@@ -108,7 +144,7 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
                 ivImagen.setImageResource(entity.imageRes);
             }
 
-            btnEliminar.setVisibility(android.view.View.GONE);
+            btnEliminar.setVisibility(View.GONE);
 
             layoutReservas.addView(view);
             total += entity.price;
@@ -127,8 +163,9 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
     }
 
     private void clearAndGoHome() {
-        if (reservationsRepository != null) {
-            reservationsRepository.clearAll();
+        if (activeUserKey != null && !currentReservations.isEmpty()) {
+            purchaseRepository.saveAll(activeUserKey, currentReservations);
+            reservationsRepository.clearAll(activeUserKey);
         }
         Intent intent = new Intent(ConfirmarCompraActivity.this, InicioActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);

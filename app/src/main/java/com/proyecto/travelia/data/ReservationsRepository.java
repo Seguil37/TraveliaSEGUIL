@@ -22,25 +22,30 @@ public class ReservationsRepository {
         dao = AppDatabase.get(context).reservationDao();
     }
 
-    public LiveData<List<ReservationEntity>> observeAll() {
-        return dao.observeAll();
+    public LiveData<List<ReservationEntity>> observeByUser(String userId) {
+        return dao.observeByUser(userId);
     }
 
     public void upsert(ReservationEntity entity) {
         ioExecutor.execute(() -> dao.upsert(entity));
     }
 
-    public void remove(String reservationId) {
-        ioExecutor.execute(() -> dao.deleteById(reservationId));
+    public void remove(String reservationId, String userId) {
+        if (userId == null) return;
+        ioExecutor.execute(() -> dao.deleteById(reservationId, userId));
     }
 
-    public void clearAll() {
-        ioExecutor.execute(dao::clearAll);
+    public void clearAll(String userId) {
+        if (userId == null) return;
+        ioExecutor.execute(() -> dao.clearAll(userId));
     }
 
-    public static String buildId(String tourId, String date) {
+    public static String buildId(String userId, String tourId, String date) {
+        String safeUser = userId == null ? "guest" : userId.trim();
         String safeTour = tourId == null ? "tour" : tourId.trim();
-        String safeDate = date == null ? String.format(Locale.getDefault(), "%d", System.currentTimeMillis()) : date.trim();
-        return safeTour + "_" + safeDate.replaceAll("\\s", "_");
+        String safeDate = date == null ?
+                String.format(Locale.getDefault(), "%d", System.currentTimeMillis()) :
+                date.trim();
+        return safeUser + "_" + safeTour + "_" + safeDate.replaceAll("\\s", "_");
     }
 }

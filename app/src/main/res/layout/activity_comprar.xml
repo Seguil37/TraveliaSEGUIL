@@ -74,6 +74,16 @@
                 android:textStyle="bold"
                 android:textColor="#1C1C1E" />
 
+            <TextView
+                android:id="@+id/tv_session_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Inicia sesión para completar tu compra"
+                android:textColor="@android:color/holo_red_dark"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <!-- Resumen dinámico -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
