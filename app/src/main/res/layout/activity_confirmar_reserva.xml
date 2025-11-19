@@ -134,7 +134,7 @@
                 android:layout_marginTop="32dp"
                 android:background="@drawable/rounded_button_gold"
                 android:text="Continuar con la compra"
-                android:textColor="@color/white"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="16sp"
                 android:textStyle="bold" />

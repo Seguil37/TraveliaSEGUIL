@@ -554,8 +554,8 @@
                 android:layout_height="56dp"
                 android:layout_marginTop="24dp"
                 android:background="@drawable/rounded_button_gold"
-                android:text="Pagar S/1940.00"
-                android:textColor="@color/white"
+                android:text="Confirmar y pagar"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="16sp"
                 android:textStyle="bold" />

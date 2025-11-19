@@ -213,7 +213,7 @@
                     android:paddingHorizontal="24dp"
                     android:background="@drawable/rounded_button_gold"
                     android:text="Filtros"
-                    android:textColor="@color/white"
+                    android:textColor="@color/travelia_text_dark"
                     android:textAllCaps="false"
                     android:textSize="15sp"
                     android:textStyle="bold"/>
@@ -287,18 +287,28 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/tv_filtros_activos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="4dp"
+                android:text=""
+                android:textColor="@color/travelia_text_muted"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
             <!-- GRILLA 2xN -->
-            <GridLayout
-                android:id="@+id/grid_rutas"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_destinos"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="12dp"
-                android:columnCount="2"
-                android:alignmentMode="alignBounds"
-                android:columnOrderPreserved="false"
-                android:useDefaultMargins="false" />
-            <!-- tarjetas dinámicas -->
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingBottom="16dp" />
+
             <!-- CTA -->
             <Button
                 android:id="@+id/btn_mas_rutas"
@@ -310,7 +320,7 @@
                 android:paddingVertical="12dp"
                 android:background="@drawable/rounded_button_gold"
                 android:text="Explorar más rutas"
-                android:textColor="@color/white"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold" />

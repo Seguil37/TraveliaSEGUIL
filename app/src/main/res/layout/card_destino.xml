@@ -154,7 +154,7 @@
                 android:layout_marginTop="12dp"
                 android:background="@drawable/rounded_button_gold"
                 android:text="Ver detalles  →"
-                android:textColor="@color/white"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold" />
