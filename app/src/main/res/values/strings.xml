@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Travelia</string>
+    <string name="login_required_message">Inicia sesión para continuar</string>
+    <string name="review_total_format">Basado en %1$d reseñas</string>
+    <string name="review_total_placeholder">Basado en 0 reseñas</string>
+    <string name="review_rating_required">Selecciona una calificación</string>
+    <string name="review_comment_required">Cuéntanos tu experiencia</string>
+    <string name="default_user_name">Viajero Travelia</string>
+    <string name="no_reviews_yet">Aún no hay reseñas</string>
+    <string name="detalle_fecha_placeholder">Seleccionar fecha</string>
+    <string name="topbar_guest_label">Inicia sesión</string>
+    <string name="topbar_profile_label">Mi perfil</string>
+    <string name="topbar_greeting_format">Hola, %1$s</string>
+    <string name="topbar_user_icon_cd">Abrir menú de usuario</string>
 </resources>

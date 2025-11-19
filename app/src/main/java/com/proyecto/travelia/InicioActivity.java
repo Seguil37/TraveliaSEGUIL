@@ -22,17 +22,33 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.ReservationsRepository;
+import com.proyecto.travelia.data.session.UserSessionManager;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.UserMenuHelper;
 
 public class InicioActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMaps;
+    private BottomNavView bottomNav;
+    private FavoritesRepository favoritesRepository;
+    private ReservationsRepository reservationsRepository;
+    private UserSessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_inicio);
+
+        sessionManager = new UserSessionManager(this);
+        if (!sessionManager.ensureLoggedIn(this)) {
+            finish();
+            return;
+        }
+
+        UserMenuHelper.bind(this, sessionManager);
 
         // ✅ Ajuste edge-to-edge (padding superior/inferior del contenedor raíz)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -70,16 +86,17 @@ public class InicioActivity extends AppCompatActivity implements OnMapReadyCallb
         }
 
         // ✅ BottomNavView: acción especial para ADD (opcional)
-        BottomNavView bottom = findViewById(R.id.bottom_nav);
-        if (bottom != null) {
-            bottom.setOnAddClickListener(v -> {
-                // TODO: cambia a tu Activity real para crear/publicar
-                // startActivity(new Intent(this, CrearPublicacionActivity.class));
-                Toast.makeText(this, "Acción agregar", Toast.LENGTH_SHORT).show();
-            });
-            // Si quieres evitar que cierre esta activity al navegar:
-            // bottom.setFinishOnNavigate(false);
+        bottomNav = findViewById(R.id.bottom_nav);
+        if (bottomNav != null) {
+            bottomNav.highlight(BottomNavView.Tab.HOME);
         }
+
+        favoritesRepository = new FavoritesRepository(this, sessionManager);
+        reservationsRepository = new ReservationsRepository(this, sessionManager);
+        favoritesRepository.observeAll().observe(this, list ->
+                updateBadges(list != null ? list.size() : 0, null));
+        reservationsRepository.observeAll().observe(this, list ->
+                updateBadges(null, list != null ? list.size() : 0));
     }
 
     // ✅ MAPA
@@ -103,5 +120,11 @@ public class InicioActivity extends AppCompatActivity implements OnMapReadyCallb
         CardData(String id, String nombre, String lugar, String precio, String estrellas, String resumen, int imagen) {
             this.id = id; this.nombre = nombre; this.lugar = lugar; this.precio = precio; this.estrellas = estrellas; this.resumen = resumen; this.imagen = imagen;
         }
+    }
+
+    private void updateBadges(Integer favCount, Integer resCount) {
+        if (bottomNav == null) return;
+        if (favCount != null) bottomNav.setFavoritesBadge(favCount);
+        if (resCount != null) bottomNav.setReserveBadge(resCount);
     }
 }

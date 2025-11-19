@@ -68,14 +68,23 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="end|center_vertical">
+            android:gravity="end|center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_reserva_unitario"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Unitario: S/0.00"
+                android:textColor="#666666"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tv_reserva_precio"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="S/0.00"
+                android:layout_marginTop="4dp"
+                android:text="Subtotal: S/0.00"
                 android:textColor="#1C1C1E"
                 android:textSize="16sp"
                 android:textStyle="bold" />

@@ -11,15 +11,25 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.proyecto.travelia.data.session.UserSessionManager;
+
 public class BienvenidaActivity extends AppCompatActivity {
 
     private Button botonComenzar;
+    private UserSessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_bienvenida);
+
+        sessionManager = new UserSessionManager(this);
+        if (sessionManager.isLoggedIn()) {
+            startActivity(new Intent(this, InicioActivity.class));
+            finish();
+            return;
+        }
 
         botonComenzar = findViewById(R.id.btn_comenzar);
 

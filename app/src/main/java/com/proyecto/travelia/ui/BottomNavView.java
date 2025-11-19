@@ -16,14 +16,18 @@ import androidx.core.view.WindowInsetsCompat;
 import com.proyecto.travelia.ConfirmarReservaActivity;
 import com.proyecto.travelia.ExplorarActivity;
 import com.proyecto.travelia.InicioActivity;
+import com.proyecto.travelia.PerfilActivity;
 import com.proyecto.travelia.R;
 import com.proyecto.travelia.favoritos.FavoritosActivity;
 
 public class BottomNavView extends CardView {
 
-    public enum Tab { HOME, EXPLORAR, ADD, FAVORITES, RESERVE }
+    public enum Tab { HOME, EXPLORAR, FAVORITES, RESERVE, PROFILE }
 
-    private View navHome, navExplorar, navAdd, navFavorites, navReserve;
+    private View navHome, navExplorar, navFavorites, navReserve, navProfile;
+    private View iconHome, iconExplorar, iconFav, iconReserve, iconProfile;
+    private View textHome, textExplorar, textFav, textReserve, textProfile;
+    private View badgeFavorites, badgeReserve;
     private boolean finishOnNavigate = true;
 
     public BottomNavView(Context context) { super(context); init(context, null); }
@@ -35,9 +39,24 @@ public class BottomNavView extends CardView {
 
         navHome      = findViewById(R.id.nav_home);
         navExplorar  = findViewById(R.id.nav_explorar);
-        navAdd       = findViewById(R.id.nav_add);
         navFavorites = findViewById(R.id.nav_favorites);
         navReserve   = findViewById(R.id.nav_reserve);
+        navProfile   = findViewById(R.id.nav_profile);
+
+        iconHome = findViewById(R.id.icon_home);
+        iconExplorar = findViewById(R.id.icon_explorar);
+        iconFav = findViewById(R.id.icon_fav);
+        iconReserve = findViewById(R.id.icon_reserve);
+        iconProfile = findViewById(R.id.icon_profile);
+
+        textHome = findViewById(R.id.text_home);
+        textExplorar = findViewById(R.id.text_explorar);
+        textFav = findViewById(R.id.text_fav);
+        textReserve = findViewById(R.id.text_reserve);
+        textProfile = findViewById(R.id.text_profile);
+
+        badgeFavorites = findViewById(R.id.badge_favorites);
+        badgeReserve = findViewById(R.id.badge_reserve);
 
         // Leer attrs
         if (attrs != null) {
@@ -47,7 +66,10 @@ public class BottomNavView extends CardView {
             int tabIndex = a.getInt(R.styleable.BottomNavView_currentTab, 0);
             finishOnNavigate = a.getBoolean(R.styleable.BottomNavView_finishOnNavigate, true);
             a.recycle();
-            highlight(Tab.values()[tabIndex]);
+            Tab[] values = Tab.values();
+            if (tabIndex >= 0 && tabIndex < values.length) {
+                highlight(values[tabIndex]);
+            }
         }
 
         // Inset bottom (IME + system bars)
@@ -67,9 +89,9 @@ public class BottomNavView extends CardView {
     private void wireDefaultNavigation(Context ctx) {
         navHome.setOnClickListener(v -> navigate(ctx, InicioActivity.class));
         navExplorar.setOnClickListener(v -> navigate(ctx, ExplorarActivity.class));
-        navAdd.setOnClickListener(v -> { /* acción pendiente */ });
         navFavorites.setOnClickListener(v -> navigate(ctx, com.proyecto.travelia.favoritos.FavoritosActivity.class));
         navReserve.setOnClickListener(v -> navigate(ctx, ConfirmarReservaActivity.class));
+        navProfile.setOnClickListener(v -> navigate(ctx, PerfilActivity.class));
     }
 
     private void navigate(Context ctx, Class<?> target) {
@@ -82,27 +104,38 @@ public class BottomNavView extends CardView {
     }
 
     public void highlight(Tab tab) {
-        // Marca visual de la pestaña activa (por simplicidad: cambia alpha de los demás)
-        float active = 1f, inactive = 0.6f;
-        navHome.setAlpha(inactive);
-        navExplorar.setAlpha(inactive);
-        navAdd.setAlpha(inactive);
-        navFavorites.setAlpha(inactive);
-        navReserve.setAlpha(inactive);
-        switch (tab) {
-            case HOME:      navHome.setAlpha(active); break;
-            case EXPLORAR:  navExplorar.setAlpha(active); break;
-            case ADD:       navAdd.setAlpha(active); break;
-            case FAVORITES: navFavorites.setAlpha(active); break;
-            case RESERVE:   navReserve.setAlpha(active); break;
-        }
+        setSelected(navHome, iconHome, textHome, tab == Tab.HOME);
+        setSelected(navExplorar, iconExplorar, textExplorar, tab == Tab.EXPLORAR);
+        setSelected(navFavorites, iconFav, textFav, tab == Tab.FAVORITES);
+        setSelected(navReserve, iconReserve, textReserve, tab == Tab.RESERVE);
+        setSelected(navProfile, iconProfile, textProfile, tab == Tab.PROFILE);
     }
 
     public void setFinishOnNavigate(boolean finish) { this.finishOnNavigate = finish; }
 
-    // Permite sobrescribir la acción del botón Add si luego quieres algo especial
-    public void setOnAddClickListener(@Nullable OnClickListener l) {
-        navAdd.setOnClickListener(l != null ? l : v -> { /* default vacía */ });
+    public void setFavoritesBadge(int count) {
+        updateBadge(badgeFavorites, count);
+    }
+
+    public void setReserveBadge(int count) {
+        updateBadge(badgeReserve, count);
+    }
+
+    private void updateBadge(View badgeView, int count) {
+        if (!(badgeView instanceof android.widget.TextView)) return;
+        android.widget.TextView tv = (android.widget.TextView) badgeView;
+        if (count <= 0) {
+            tv.setVisibility(View.GONE);
+        } else {
+            tv.setVisibility(View.VISIBLE);
+            tv.setText(String.valueOf(Math.min(count, 99)));
+        }
+    }
+
+    private void setSelected(View container, View icon, View text, boolean selected) {
+        container.setSelected(selected);
+        if (icon != null) icon.setSelected(selected);
+        if (text != null) text.setSelected(selected);
     }
 
     private int dp(int value) {
