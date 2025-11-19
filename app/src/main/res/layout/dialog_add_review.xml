@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Comparte tu experiencia"
+        android:textColor="@color/travelia_text_dark"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <RatingBar
+        android:id="@+id/dialog_rating"
+        style="@style/Widget.AppCompat.RatingBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:numStars="5"
+        android:stepSize="0.5"
+        android:tint="@color/travelia_yellow" />
+
+    <EditText
+        android:id="@+id/dialog_comment"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/rounded_search_background"
+        android:gravity="top|start"
+        android:hint="¿Qué fue lo que más te gustó?"
+        android:inputType="textMultiLine"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/dialog_submit"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/rounded_button_gold"
+        android:text="Enviar reseña"
+        android:textColor="@color/travelia_text_dark"
+        android:textStyle="bold" />
+</LinearLayout>

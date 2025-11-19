@@ -13,7 +13,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.proyecto.travelia.R;
 import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.FavoriteEntity;
+import com.proyecto.travelia.data.session.UserSessionManager;
 import com.proyecto.travelia.ui.BottomNavView;
 
 import java.util.List;
@@ -21,6 +23,8 @@ import java.util.List;
 public class FavoritosActivity extends AppCompatActivity {
 
     private FavoritesRepository repo;
+    private ReservationsRepository reservationsRepository;
+    private UserSessionManager sessionManager;
     private FavoritosAdapter adapter;
 
     @Override
@@ -28,6 +32,12 @@ public class FavoritosActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_favoritos);
+
+        sessionManager = new UserSessionManager(this);
+        if (!sessionManager.ensureLoggedIn(this)) {
+            finish();
+            return;
+        }
 
         // Edge-to-edge: el BottomNav maneja el margen inferior
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -37,7 +47,8 @@ public class FavoritosActivity extends AppCompatActivity {
         });
 
         // Recycler
-        repo = new FavoritesRepository(this);
+        repo = new FavoritesRepository(this, sessionManager);
+        reservationsRepository = new ReservationsRepository(this, sessionManager);
         RecyclerView rv = findViewById(R.id.rvFavoritos);
         rv.setLayoutManager(new GridLayoutManager(this, 2));
         adapter = new FavoritosAdapter(repo, this);
@@ -48,16 +59,24 @@ public class FavoritosActivity extends AppCompatActivity {
             adapter.submit(list);
             TextView title = findViewById(R.id.tvTitle);
             if (title != null) title.setText("Mis favoritos (" + list.size() + ")");
+            updateBadges(list != null ? list.size() : 0, null);
+        });
+
+        reservationsRepository.observeAll().observe(this, list -> {
+            updateBadges(null, list != null ? list.size() : 0);
         });
 
         // BottomNav: acción especial para Agregar (opcional)
         BottomNavView bottom = findViewById(R.id.bottom_nav);
         if (bottom != null) {
-            bottom.setOnAddClickListener(v -> {
-                // TODO: abre tu Activity de creación/publicación si aplica
-                // startActivity(new Intent(this, CrearPublicacionActivity.class));
-            });
-            // bottom.setFinishOnNavigate(false); // si no quieres cerrar al navegar
+            bottom.highlight(BottomNavView.Tab.FAVORITES);
         }
+    }
+
+    private void updateBadges(Integer fav, Integer res) {
+        BottomNavView bottom = findViewById(R.id.bottom_nav);
+        if (bottom == null) return;
+        if (fav != null) bottom.setFavoritesBadge(fav);
+        if (res != null) bottom.setReserveBadge(res);
     }
 }

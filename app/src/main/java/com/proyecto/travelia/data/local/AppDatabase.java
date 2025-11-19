@@ -5,11 +5,14 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {FavoriteEntity.class, ReservationEntity.class}, version = 2)
+@Database(entities = {FavoriteEntity.class, ReservationEntity.class, UserEntity.class, ReviewEntity.class, PurchaseEntity.class}, version = 3)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract FavoritesDao favoritesDao();
     public abstract ReservationDao reservationDao();
+    public abstract UserDao userDao();
+    public abstract ReviewDao reviewDao();
+    public abstract PurchaseDao purchaseDao();
 
     private static volatile AppDatabase INSTANCE;
 

@@ -45,6 +45,18 @@
             android:name=".ConfirmarCompraActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".PerfilActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".HistorialComprasActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+
         <!-- Launcher -->
         <activity
             android:name=".BienvenidaActivity"

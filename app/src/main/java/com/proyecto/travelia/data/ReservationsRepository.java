@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import com.proyecto.travelia.data.local.AppDatabase;
 import com.proyecto.travelia.data.local.ReservationDao;
 import com.proyecto.travelia.data.local.ReservationEntity;
+import com.proyecto.travelia.data.session.UserSessionManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,26 +17,33 @@ import java.util.concurrent.Executors;
 public class ReservationsRepository {
 
     private final ReservationDao dao;
+    private final UserSessionManager sessionManager;
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
-    public ReservationsRepository(Context context) {
+    public ReservationsRepository(Context context, UserSessionManager sessionManager) {
         dao = AppDatabase.get(context).reservationDao();
+        this.sessionManager = sessionManager;
     }
 
     public LiveData<List<ReservationEntity>> observeAll() {
-        return dao.observeAll();
+        return dao.observeAll(userId());
     }
 
     public void upsert(ReservationEntity entity) {
+        entity.userId = userId();
         ioExecutor.execute(() -> dao.upsert(entity));
     }
 
     public void remove(String reservationId) {
-        ioExecutor.execute(() -> dao.deleteById(reservationId));
+        ioExecutor.execute(() -> dao.deleteById(reservationId, userId()));
     }
 
     public void clearAll() {
-        ioExecutor.execute(dao::clearAll);
+        ioExecutor.execute(() -> dao.clearAll(userId()));
+    }
+
+    private String userId() {
+        return sessionManager.getActiveOrGuestId();
     }
 
     public static String buildId(String tourId, String date) {
