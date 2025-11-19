@@ -3,8 +3,6 @@ package com.proyecto.travelia;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -15,9 +13,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.proyecto.travelia.data.FavoritesRepository;
+import com.proyecto.travelia.data.PurchasesRepository;
 import com.proyecto.travelia.data.ReservationsRepository;
-import com.proyecto.travelia.data.local.ReservationEntity;
+import com.proyecto.travelia.data.local.PurchaseEntity;
+import com.proyecto.travelia.data.session.UserSessionManager;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.UserMenuHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +28,18 @@ import java.util.Locale;
 public class ConfirmarCompraActivity extends AppCompatActivity {
 
     private Button btnVerViajes;
-    private LinearLayout layoutReservas;
+    private LinearLayout layoutCompras;
     private TextView tvEmpty;
     private TextView tvTotalPagado;
     private android.view.View viewDivider;
 
+    private PurchasesRepository purchasesRepository;
     private ReservationsRepository reservationsRepository;
-    private List<ReservationEntity> currentReservations = new ArrayList<>();
+    private FavoritesRepository favoritesRepository;
+    private UserSessionManager sessionManager;
+    private BottomNavView bottomNav;
+    private List<PurchaseEntity> currentPurchases = new ArrayList<>();
+    private String orderId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +47,13 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_confirmar_compra);
+
+        sessionManager = new UserSessionManager(this);
+        if (!sessionManager.ensureLoggedIn(this)) {
+            finish();
+            return;
+        }
+        UserMenuHelper.bind(this, sessionManager);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets sb = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -49,69 +63,78 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
 
         initViews();
         setupBottomNavNew();
-        initReservationsObserver();
+        initRepositories();
         setupListeners();
         setupBackPressedHandler();
     }
 
     private void initViews() {
         btnVerViajes = findViewById(R.id.btn_ver_viajes);
-        layoutReservas = findViewById(R.id.layout_compra_reservas);
+        layoutCompras = findViewById(R.id.layout_compra_reservas);
         tvEmpty = findViewById(R.id.tv_empty_compra);
         tvTotalPagado = findViewById(R.id.tv_total_pagado);
         viewDivider = findViewById(R.id.view_compra_divider);
+        orderId = getIntent().getStringExtra("order_id");
+        double totalIntent = getIntent().getDoubleExtra("total_reservas", 0d);
+        tvTotalPagado.setText(String.format(Locale.getDefault(), "S/%.2f", totalIntent));
     }
 
     private void setupListeners() {
         btnVerViajes.setOnClickListener(v -> clearAndGoHome());
     }
 
-    private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
-        reservationsRepository.observeAll().observe(this, this::renderResumen);
+    private void initRepositories() {
+        purchasesRepository = new PurchasesRepository(this);
+        reservationsRepository = new ReservationsRepository(this, sessionManager);
+        favoritesRepository = new FavoritesRepository(this, sessionManager);
+
+        if (orderId != null) {
+            purchasesRepository.observeOrder(orderId).observe(this, this::renderResumen);
+        } else {
+            purchasesRepository.observeUser(sessionManager.getActiveUserId()).observe(this, this::renderResumen);
+        }
+
+        reservationsRepository.observeAll().observe(this, list ->
+                updateBadges(null, list != null ? list.size() : 0));
+        favoritesRepository.observeAll().observe(this, list ->
+                updateBadges(list != null ? list.size() : 0, null));
     }
 
-    private void renderResumen(List<ReservationEntity> reservas) {
-        layoutReservas.removeAllViews();
+    private void renderResumen(List<PurchaseEntity> compras) {
+        layoutCompras.removeAllViews();
 
-        if (reservas == null || reservas.isEmpty()) {
-            currentReservations = new ArrayList<>();
+        if (compras == null || compras.isEmpty()) {
+            currentPurchases = new ArrayList<>();
             tvEmpty.setVisibility(android.view.View.VISIBLE);
             viewDivider.setVisibility(android.view.View.GONE);
             tvTotalPagado.setText(String.format(Locale.getDefault(), "S/%.2f", 0f));
             return;
         }
 
-        currentReservations = new ArrayList<>(reservas);
+        currentPurchases = new ArrayList<>(compras);
         tvEmpty.setVisibility(android.view.View.GONE);
         viewDivider.setVisibility(android.view.View.VISIBLE);
 
         double total = 0d;
 
-        for (ReservationEntity entity : currentReservations) {
-            android.view.View view = getLayoutInflater().inflate(R.layout.item_reserva, layoutReservas, false);
+        for (PurchaseEntity entity : currentPurchases) {
+            android.view.View view = getLayoutInflater().inflate(R.layout.item_compra_resumen, layoutCompras, false);
 
-            TextView tvTitulo = view.findViewById(R.id.tv_reserva_titulo);
-            TextView tvUbicacion = view.findViewById(R.id.tv_reserva_ubicacion);
-            TextView tvFecha = view.findViewById(R.id.tv_reserva_fecha);
-            TextView tvParticipantes = view.findViewById(R.id.tv_reserva_participantes);
-            TextView tvPrecio = view.findViewById(R.id.tv_reserva_precio);
-            ImageView ivImagen = view.findViewById(R.id.iv_reserva);
-            ImageButton btnEliminar = view.findViewById(R.id.btn_eliminar_reserva);
+            TextView tvTitulo = view.findViewById(R.id.tv_compra_titulo);
+            TextView tvDetalle = view.findViewById(R.id.tv_compra_detalle);
+            TextView tvSubtotal = view.findViewById(R.id.tv_compra_total);
 
             tvTitulo.setText(entity.title);
-            tvUbicacion.setText(entity.location);
-            tvFecha.setText(entity.date);
-            tvParticipantes.setText(entity.participants);
-            tvPrecio.setText(String.format(Locale.getDefault(), "S/%.2f", entity.price));
-            if (entity.imageRes != 0) {
-                ivImagen.setImageResource(entity.imageRes);
-            }
+            String detalle = entity.location + " • " + entity.date + " • " + entity.participants;
+            tvDetalle.setText(detalle);
+            int participantes = entity.participantsCount <= 0 ? 1 : entity.participantsCount;
+            tvSubtotal.setText(String.format(Locale.getDefault(), "S/%.2f x%d = S/%.2f",
+                    entity.unitPrice,
+                    participantes,
+                    entity.totalPrice));
 
-            btnEliminar.setVisibility(android.view.View.GONE);
-
-            layoutReservas.addView(view);
-            total += entity.price;
+            layoutCompras.addView(view);
+            total += entity.totalPrice;
         }
 
         tvTotalPagado.setText(String.format(Locale.getDefault(), "S/%.2f", total));
@@ -137,9 +160,15 @@ public class ConfirmarCompraActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavNew() {
-        BottomNavView bottom = findViewById(R.id.bottom_nav);
-        if (bottom != null) {
-            bottom.highlight(BottomNavView.Tab.RESERVE);
+        bottomNav = findViewById(R.id.bottom_nav);
+        if (bottomNav != null) {
+            bottomNav.highlight(BottomNavView.Tab.RESERVE);
         }
+    }
+
+    private void updateBadges(Integer favCount, Integer resCount) {
+        if (bottomNav == null) return;
+        if (favCount != null) bottomNav.setFavoritesBadge(favCount);
+        if (resCount != null) bottomNav.setReserveBadge(resCount);
     }
 }

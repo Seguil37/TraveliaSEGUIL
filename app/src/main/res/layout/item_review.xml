@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_avatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/rounded_circle_white_bg"
+            android:gravity="center"
+            android:text="A"
+            android:textColor="@color/travelia_text_dark"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_review_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre"
+                android:textColor="@color/travelia_text_dark"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <RatingBar
+                android:id="@+id/rb_review"
+                style="@style/Widget.AppCompat.RatingBar.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:isIndicator="true"
+                android:numStars="5"
+                android:rating="4"
+                android:stepSize="0.5"
+                android:tint="@color/travelia_yellow" />
+
+            <TextView
+                android:id="@+id/tv_review_comment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Comentario"
+                android:textColor="@color/travelia_text_dark"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tv_review_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="01 Ene 2024"
+                android:textColor="@color/travelia_text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

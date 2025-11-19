@@ -156,9 +156,9 @@
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/rounded_circle_white_bg"
+                android:background="@drawable/rounded_button_gold"
                 android:text="Cancelar"
-                android:textColor="#666666"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -171,7 +171,7 @@
                 android:layout_marginStart="8dp"
                 android:background="@drawable/rounded_button_gold"
                 android:text="Confirmar"
-                android:textColor="@color/white"
+                android:textColor="@color/travelia_text_dark"
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold" />

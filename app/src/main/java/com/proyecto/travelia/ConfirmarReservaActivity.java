@@ -17,9 +17,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.proyecto.travelia.data.FavoritesRepository;
 import com.proyecto.travelia.data.ReservationsRepository;
 import com.proyecto.travelia.data.local.ReservationEntity;
+import com.proyecto.travelia.data.session.UserSessionManager;
 import com.proyecto.travelia.ui.BottomNavView;
+import com.proyecto.travelia.ui.UserMenuHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +37,9 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
     private TextView tvEmpty;
 
     private ReservationsRepository reservationsRepository;
+    private FavoritesRepository favoritesRepository;
+    private UserSessionManager sessionManager;
+    private BottomNavView bottomNav;
     private List<ReservationEntity> currentReservations = new ArrayList<>();
 
     @Override
@@ -43,6 +49,13 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_confirmar_reserva);
 
+        sessionManager = new UserSessionManager(this);
+        if (!sessionManager.ensureLoggedIn(this)) {
+            finish();
+            return;
+        }
+        UserMenuHelper.bind(this, sessionManager);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets sb = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(sb.left, sb.top, sb.right, 0);
@@ -51,7 +64,7 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
 
         initViews();
         setupBottomNav();
-        initReservationsObserver();
+        initRepositories();
         setupListeners();
     }
 
@@ -74,15 +87,21 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
     }
 
     private void setupBottomNav() {
-        BottomNavView bottom = findViewById(R.id.bottom_nav);
-        if (bottom != null) {
-            bottom.highlight(BottomNavView.Tab.RESERVE);
+        bottomNav = findViewById(R.id.bottom_nav);
+        if (bottomNav != null) {
+            bottomNav.highlight(BottomNavView.Tab.RESERVE);
         }
     }
 
-    private void initReservationsObserver() {
-        reservationsRepository = new ReservationsRepository(this);
-        reservationsRepository.observeAll().observe(this, this::renderReservations);
+    private void initRepositories() {
+        reservationsRepository = new ReservationsRepository(this, sessionManager);
+        favoritesRepository = new FavoritesRepository(this, sessionManager);
+        reservationsRepository.observeAll().observe(this, reservations -> {
+            renderReservations(reservations);
+            updateBadges(null, reservations != null ? reservations.size() : 0);
+        });
+        favoritesRepository.observeAll().observe(this, list ->
+                updateBadges(list != null ? list.size() : 0, null));
     }
 
     private void renderReservations(List<ReservationEntity> reservations) {
@@ -109,6 +128,7 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
             TextView tvUbicacion = view.findViewById(R.id.tv_reserva_ubicacion);
             TextView tvFecha = view.findViewById(R.id.tv_reserva_fecha);
             TextView tvParticipantes = view.findViewById(R.id.tv_reserva_participantes);
+            TextView tvUnitario = view.findViewById(R.id.tv_reserva_unitario);
             TextView tvPrecio = view.findViewById(R.id.tv_reserva_precio);
             ImageView ivImagen = view.findViewById(R.id.iv_reserva);
             ImageButton btnEliminar = view.findViewById(R.id.btn_eliminar_reserva);
@@ -117,7 +137,8 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
             tvUbicacion.setText(entity.location);
             tvFecha.setText(entity.date);
             tvParticipantes.setText(entity.participants);
-            tvPrecio.setText(String.format(Locale.getDefault(), "S/%.2f", entity.price));
+            tvUnitario.setText(String.format(Locale.getDefault(), "Unitario: S/%.2f", entity.unitPrice));
+            tvPrecio.setText(String.format(Locale.getDefault(), "Subtotal: S/%.2f", entity.price));
             if (entity.imageRes != 0) {
                 ivImagen.setImageResource(entity.imageRes);
             }
@@ -135,5 +156,11 @@ public class ConfirmarReservaActivity extends AppCompatActivity {
     private void updateContinueButtonState(boolean enabled) {
         btnContinuarCompra.setEnabled(enabled);
         btnContinuarCompra.setAlpha(enabled ? 1f : 0.5f);
+    }
+
+    private void updateBadges(Integer favCount, Integer resCount) {
+        if (bottomNav == null) return;
+        if (favCount != null) bottomNav.setFavoritesBadge(favCount);
+        if (resCount != null) bottomNav.setReserveBadge(resCount);
     }
 }
